@@ -136,6 +136,20 @@ info: 'Fri.Spec.Extractor.profile_extractProgram_eq_le' depends on axioms:
 #print axioms Fri.Spec.Extractor.profile_extractProgram_eq_le
 
 /--
+info: 'Fri.Spec.knowledgeSoundnessWithResources_extract_reconstruction' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.Spec.knowledgeSoundnessWithResources_extract_reconstruction
+
+example : CompPoly.Arithmetic.reconstructionInterpolationProfileBound 256 .add = 327936 := by
+  decide
+
+example : Fri.Spec.Extractor.extractorReconstructionProfileBound 8 (fun _ : Fin 8 ↦ (1 : ℕ+)) 1
+    (.inl .add) = 377344 := by
+  decide
+
+/--
 info: 'Fri.Spec.knowledgeSoundnessWithResources_extract' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/

@@ -200,6 +200,8 @@ home_page/            site assets and assembled website root
   Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
+  `ToCompPoly/Univariate/ArithmeticQuadraticInterpolation.lean` supplies the interpolation
+  and per-kind budget for final witness reconstruction.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
   state functions, adaptive accumulation, and the acceptance-to-soundness bridge live in
   `OracleReduction/Security/{BadEvents,Accumulation,Acceptance}.lean`. These proofs use that

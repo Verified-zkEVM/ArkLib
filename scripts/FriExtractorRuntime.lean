@@ -179,6 +179,16 @@ def arithmeticChecks : IO Unit := do
     arithmeticCounts zeroInterp.2 == [2, 0, 1, 0, 2, 6, 0, 1, 11]
   let collide := profileArithmetic (Arithmetic.interpolate (#[3, 3] : Array F) #[0, 0] 2)
   check "colliding nodes still request every inverse" fun _ ↦ collide.2 .inv == 2
+  let quadratic := profileArithmetic
+    (Arithmetic.interpolateForReconstruction (#[0, 1, 3, 5] : Array F) #[5, 6, 8, 10] 4)
+  check "quadratic reconstruction recovers a linear polynomial and charges its fold" fun _ ↦
+    quadratic.1.val.val == #[5, 1] && quadratic.2 .add == 84 && quadratic.2 .inv == 4
+  let repeatedNodes : Array F := #[3, 3, -3]
+  let repeatedValues : Array F := #[1, 0, 5]
+  let legacy := profileArithmetic (Arithmetic.interpolate repeatedNodes repeatedValues 4)
+  let improved := profileArithmetic (Arithmetic.interpolateQuadratic repeatedNodes repeatedValues 4)
+  check "quadratic interpolation preserves repeated nodes and defaulted reads" fun _ ↦
+    improved.1.val.val == legacy.1.val.val
   let zeros := profileArithmetic (Arithmetic.trimRaw (#[0, 0, 0] : Array F))
   let stop := profileArithmetic (Arithmetic.trimRaw (#[0, 0, 3] : Array F))
   check "trim counts zero scans and stops at a nonzero last coefficient" fun _ ↦
@@ -241,7 +251,7 @@ def extractorChecks : IO Unit := do
     (extractProgram scheduleHeterogeneous 1 (by decide) _ challengesTwo)
   check "heterogeneous folds preserve shifted-domain order and exact counts" fun _ ↦
     (heterogeneous.1.map fun w ↦ w.val.val) == some #[5, 1] &&
-    heterogeneous.2 (.inr .wordRead) == 120 && heterogeneous.2 (.inl .inv) == 281 &&
+    heterogeneous.2 (.inr .wordRead) == 120 && heterogeneous.2 (.inl .inv) == 233 &&
     heterogeneous.2 (.inr .domainRead) == 2 && heterogeneous.2 (.inr .challengeRead) == 2
   check "public wrapper ignores repeated queries and the output witness" fun _ ↦
     extracted (fun _ ↦ initialQuery (ω := domain8) 0) zeroOutput == some #[] &&

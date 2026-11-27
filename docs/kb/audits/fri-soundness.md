@@ -172,6 +172,12 @@ subtractions consume one `I` budget. The final polynomial consumes one `E(d)` pe
 only at the final round. `profile_extractProgram_apply_le` separately bounds every coefficient,
 node-cache, value-cache, and metadata coordinate by the explicit `extractorProfileBound` vector.
 Its transparent definition composes initialization, the complete scan, and final interpolation.
+The tighter `extractorReconstructionProfileBound` replaces the final interpolation term with
+the budget for interpolation with a shared nodal polynomial. That term is quadratic in `D`.
+Below four nodes, the routine and its budget are those of `interpolate`. The scan keeps its own
+interpolation charges.
+`Fri.Spec.knowledgeSoundnessWithResources_extract_reconstruction` packages the tighter
+budget with the same game and soundness error.
 
 `Fri.Spec.knowledgeSoundnessWithResources_extract` combines the knowledge game for the same
 extractor with the `extractorProfileBound` vector as its budget, through
@@ -182,7 +188,7 @@ reconstructing them from the input statement and transcript prefix is outside th
 The theorem proves that `extract` is the execution of `extractProgram` on that view, and bounds
 every path of the instruction program over all responses. Because every instruction response is
 a certified singleton, the program has one path, whose cost is the recorded profile. The
-scope table linked above applies unchanged. Its charged `Arithmetic.evalRaw` is the power-sum
+scope table linked above applies unchanged. The scan's `Arithmetic.evalRaw` is the power-sum
 instruction program; ordinary CompPoly compiled evaluation dispatches to Horner. No source
 rewrite has been shown to replace FRI's measured program with that separate evaluator. The
 [algorithm map](../../design/03a-extractor-efficiency.md#polynomial-algorithm-accounting) records

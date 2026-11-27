@@ -14,9 +14,10 @@ public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 # Knowledge soundness of FRI with measured extraction
 
 The named FRI extractor executes the instruction program `Extractor.extractProgram` on the
-retained commitment history and folding challenges. Its knowledge-soundness error is the existing
-`soundnessError`, and every execution path of that program stays within the operation-count
-vector `Extractor.extractorProfileBound`, on every history, including rejected ones.
+retained commitment history and folding challenges. Its knowledge-soundness error is
+`soundnessError`. On every history, including rejected ones, each execution path fits
+`Extractor.extractorReconstructionProfileBound`. That vector is at most
+`Extractor.extractorProfileBound` in every coordinate.
 
 The counts cover field additions, subtractions, multiplications, inversions and equality tests,
 reads of retained words, domain points, folding challenges and the final polynomial, coefficient
@@ -75,20 +76,45 @@ theorem measuredProgram_realizesExtractor (hs : (∑ j, (s j).val) ≤ n) :
   rw [extract_run, extractHistory_eq_profile, profile_fst]
   rfl
 
-/-- Every execution path of the measured program stays within `extractorProfileBound`. -/
-theorem measuredProgram_costAtMost (hs : (∑ j, (s j).val) ≤ n) :
-    (measuredProgram (ω := ω) s d l hs).CostAtMost (extractorProfileBound n s d) :=
+/-- Every execution path fits `extractorReconstructionProfileBound`. -/
+theorem measuredProgram_costAtMost_reconstruction (hs : (∑ j, (s j).val) ≤ n) :
+    (measuredProgram (ω := ω) s d l hs).CostAtMost (extractorReconstructionProfileBound n s d) :=
   PFunctor.FreeM.MeasuredProgram.costAtMost_of_runAdd_le _ _
     (fun v ↦ eq_instructionAnswer s v.1 v.2)
     (fun v ↦ by
       change (simulateQ (QueryImpl.withAddCost (instructionAnswer s v.1 v.2) (instructionCost s))
         (extractProgram s d hs v.1 v.2)).runAdd.2 ≤ _
       rw [← profile_eq_runAdd]
-      exact profile_extractProgram_apply_le s v.1 v.2 d hs)
+      exact profile_extractProgram_reconstruction_le s v.1 v.2 d hs)
+
+/-- Every execution path of the measured program fits `extractorProfileBound`. -/
+theorem measuredProgram_costAtMost (hs : (∑ j, (s j).val) ≤ n) :
+    (measuredProgram (ω := ω) s d l hs).CostAtMost (extractorProfileBound n s d) :=
+  (measuredProgram_costAtMost_reconstruction s d l hs).mono
+    (extractorReconstructionProfileBound_le n s d)
 
 end Extractor
 
 variable [SampleableType F]
+
+/-- The named extractor satisfies the knowledge-soundness game with error `soundnessError`, and
+its measured program fits `extractorReconstructionProfileBound` on every retained history. -/
+theorem knowledgeSoundnessWithResources_extract_reconstruction
+    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
+    (θ : ℝ) (δ : ℝ≥0)
+    (hrate : min θ δ ≤ 1 - (2 ^ (∑ j, (s j).val) * d.val : ℕ) / (2 ^ n : ℝ))
+    [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
+    (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWithResources init impl
+      (inputRelation k s d δ) (outputRelation k s d δ)
+      (Extractor.extract s d (round_bound hdom) l)
+      (soundnessError (ω := ω) s d l θ δ)
+      (Extractor.measuredProgram s d l (round_bound hdom))
+      (Extractor.extractorReconstructionProfileBound n s d) :=
+  ⟨knowledge_soundness_with s d l hdom θ δ hrate init impl,
+    Extractor.measuredProgram_realizesExtractor s d l (round_bound hdom),
+    Extractor.measuredProgram_costAtMost_reconstruction s d l (round_bound hdom)⟩
 
 /-- The named extractor satisfies the knowledge-soundness game with error `soundnessError`, and
 its measured program stays within the operation-count vector `extractorProfileBound` on every
@@ -108,8 +134,8 @@ theorem knowledgeSoundnessWithResources_extract
       (soundnessError (ω := ω) s d l θ δ)
       (Extractor.measuredProgram s d l (round_bound hdom))
       (Extractor.extractorProfileBound n s d) :=
-  ⟨knowledge_soundness_with s d l hdom θ δ hrate init impl,
-    Extractor.measuredProgram_realizesExtractor s d l (round_bound hdom),
-    Extractor.measuredProgram_costAtMost s d l (round_bound hdom)⟩
+  OracleVerifier.knowledgeSoundnessWithResources.mono init impl
+    (knowledgeSoundnessWithResources_extract_reconstruction s d l hdom θ δ hrate init impl)
+    (Extractor.extractorReconstructionProfileBound_le n s d)
 
 end Fri.Spec

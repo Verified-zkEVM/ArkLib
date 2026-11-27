@@ -26,22 +26,36 @@ variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)
 
-/-- Final interpolation pays its coefficient-interpolation envelope and degree metadata check. -/
+/-- Budget of final interpolation by `Arithmetic.interpolate`, plus one degree metadata check. -/
 def finalInterpolationProfileBound (D : ℕ) (kind : CostKind) : ℕ :=
   embedArithmeticCost (Arithmetic.interpolationProfileBound D) kind +
     if kind = .inl .metadata then 1 else 0
 
-/-- Every final interpolation branch stays within the interpolation-and-degree envelope. -/
-theorem profile_interpolateSelection_apply_le (d : ℕ+)
+/-- Final reconstruction pays for the chosen interpolation and one degree metadata check. -/
+def reconstructionProfileBound (D : ℕ) (kind : CostKind) : ℕ :=
+  embedArithmeticCost (Arithmetic.reconstructionInterpolationProfileBound D) kind +
+    if kind = .inl .metadata then 1 else 0
+
+/-- `reconstructionProfileBound` is at most `finalInterpolationProfileBound` in every
+coordinate. -/
+theorem reconstructionProfileBound_le (D : ℕ) (kind : CostKind) :
+    reconstructionProfileBound D kind ≤ finalInterpolationProfileBound D kind := by
+  cases kind with
+  | inl kind =>
+    exact Nat.add_le_add_right (Arithmetic.reconstructionInterpolationProfileBound_le D kind) _
+  | inr kind => rfl
+
+/-- Every reconstruction branch fits the chosen interpolation and degree-check budget. -/
+theorem profile_interpolateSelection_reconstruction_le (d : ℕ+)
     (state : Selection s o (foldingDegree s d 0)) (kind : CostKind) :
     (profile s o α (interpolateSelection s d o α state)).2 kind ≤
-      finalInterpolationProfileBound (foldingDegree s d 0) kind := by
-  unfold interpolateSelection finalInterpolationProfileBound
+      reconstructionProfileBound (foldingDegree s d 0) kind := by
+  unfold interpolateSelection reconstructionProfileBound
   by_cases hc : foldingDegree s d 0 ≤ state.count
   · simp only [hc, dite_true]
     refine profile_bind_apply_le s o α _ _ kind _ _ ?_ ?_
     · exact profile_liftComp_apply_le s o α _ _
-        (Arithmetic.profileArithmetic_interpolate_le state.nodes state.values
+        (Arithmetic.profileArithmetic_interpolateForReconstruction_le state.nodes state.values
           (foldingDegree s d 0)) kind
     intro p
     refine profile_bind_apply_le s o α _ _ kind
@@ -53,6 +67,14 @@ theorem profile_interpolateSelection_apply_le (d : ℕ+)
     split_ifs <;> simp
   · simp [hc]
 
+/-- Every reconstruction branch fits `finalInterpolationProfileBound`. -/
+theorem profile_interpolateSelection_apply_le (d : ℕ+)
+    (state : Selection s o (foldingDegree s d 0)) (kind : CostKind) :
+    (profile s o α (interpolateSelection s d o α state)).2 kind ≤
+      finalInterpolationProfileBound (foldingDegree s d 0) kind :=
+  (profile_interpolateSelection_reconstruction_le s o α d state kind).trans
+    (reconstructionProfileBound_le (foldingDegree s d 0) kind)
+
 /-- The explicit whole-program envelope includes initialization, the complete scan, and recovery. -/
 def extractorProfileBound (n : ℕ) {r : ℕ} (s : Fin (r + 1) → ℕ+) (d : ℕ+)
     (kind : CostKind) : ℕ :=
@@ -61,30 +83,55 @@ def extractorProfileBound (n : ℕ) {r : ℕ} (s : Fin (r + 1) → ℕ+) (d : �
     (if kind = .inl .metadata then 1 else 0) +
     finalInterpolationProfileBound (foldingDegree s d 0) kind
 
-/-- The named extractor's measured program satisfies every primitive-coordinate envelope. -/
-theorem profile_extractProgram_apply_le (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
+/-- Budget for initialization and the complete scan, with `reconstructionProfileBound` for
+final reconstruction. -/
+def extractorReconstructionProfileBound (n : ℕ) {r : ℕ}
+    (s : Fin (r + 1) → ℕ+) (d : ℕ+) (kind : CostKind) : ℕ :=
+  initializationBound n s d.val kind +
+    2 ^ n * scanCellProfileBound n (positionProfileBound s d.val) kind +
+    (if kind = .inl .metadata then 1 else 0) +
+    reconstructionProfileBound (foldingDegree s d 0) kind
+
+/-- `extractorReconstructionProfileBound` is at most `extractorProfileBound` in every
+coordinate. -/
+theorem extractorReconstructionProfileBound_le (n : ℕ) {r : ℕ}
+    (s : Fin (r + 1) → ℕ+) (d : ℕ+) :
+    extractorReconstructionProfileBound n s d ≤ extractorProfileBound n s d := by
+  intro kind
+  exact Nat.add_le_add_left (reconstructionProfileBound_le (foldingDegree s d 0) kind) _
+
+/-- The complete measured extractor fits `extractorReconstructionProfileBound`. -/
+theorem profile_extractProgram_reconstruction_le (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
     (kind : CostKind) :
-    (profile s o α (extractProgram s d hs o α)).2 kind ≤ extractorProfileBound n s d kind := by
+    (profile s o α (extractProgram s d hs o α)).2 kind ≤
+      extractorReconstructionProfileBound n s d kind := by
   have hprep := profile_prepareInputs_apply_le s o α d kind
   unfold extractProgram
   rw [profile_bind]
   cases hi : (profile s o α (prepareInputs s o α d)).1 with
   | none =>
     simp only [hi, profile_pure, Pi.add_apply, Pi.zero_apply, add_zero]
-    exact hprep.trans (by unfold extractorProfileBound; omega)
+    exact hprep.trans (by unfold extractorReconstructionProfileBound; omega)
   | some input =>
     have hscan := profile_scan_apply_le s o α hs input.generator
       (checkPosition s o α hs input) (positionProfileBound s d.val)
       (profile_checkPosition_apply_le s o α hs input) (foldingDegree s d 0) kind
     let state := (profile s o α (scan s o α hs input.generator
       (checkPosition s o α hs input) (foldingDegree s d 0))).1
-    have hfinal := profile_interpolateSelection_apply_le s o α d state.val kind
+    have hfinal := profile_interpolateSelection_reconstruction_le s o α d state.val kind
     simp only [hi, profile_bind, Pi.add_apply]
     dsimp only [state] at hfinal
-    unfold extractorProfileBound
+    unfold extractorReconstructionProfileBound
     omega
 
-/-- Inversion counts include setup and the pairwise divisors of each interpolation. -/
+/-- The complete measured extractor fits `extractorProfileBound`. -/
+theorem profile_extractProgram_apply_le (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
+    (kind : CostKind) :
+    (profile s o α (extractProgram s d hs o α)).2 kind ≤ extractorProfileBound n s d kind :=
+  (profile_extractProgram_reconstruction_le s o α d hs kind).trans
+    (extractorReconstructionProfileBound_le n s d kind)
+
+/-- Inversion counts include setup, the folding checks, and final reconstruction. -/
 theorem profile_extractProgram_inv_le (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n) :
     (profile s o α (extractProgram s d hs o α)).2 (.inl .inv) ≤
       1 + 2 ^ n * (∑ i, 2 ^ (s i).val * (2 ^ (s i).val - 1)) +
