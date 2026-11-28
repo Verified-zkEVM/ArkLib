@@ -9,6 +9,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Bas
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockStructure
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Layout
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutBlockFinder
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutVecTree
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
@@ -41,6 +42,8 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
   * `BlockStructure` — `BlockCWSSStructure`, a layout per round, with its shape, tree size and
     error sum, and the embedding `CWSSStructure.toBlock` of the homogeneous structure (same shape).
   * `LayoutVecTree` — trees of a layout as structured `Rewinding.VecTree`s of the VCVio finders.
+  * `LayoutBlockFinder` — a block and VCVio's block finder: stars as block stars, and the block's
+    error and arity as the finder's error and cost.
   * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
     (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor
     (`Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx`).

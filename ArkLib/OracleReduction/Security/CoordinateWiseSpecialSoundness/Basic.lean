@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.OracleReduction.Security.TranscriptTree
+public import ToMathlib.Combinatorics.CoordinateWise
 
 /-!
   # Coordinate-Wise Special Soundness (CWSS) — the notion
@@ -77,16 +78,16 @@ variable {S : Type*}
 /-- The relation `x ≡ᵢ y`: the coordinate-vectors `x` and `y` agree in every coordinate except the
   `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. Coordinate `u` may have its own
   alphabet `S u`; a vector over one alphabet is the case `S u = T` for all `u`, and its call sites
-  elaborate unchanged. -/
-def CoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} (i : Fin ℓ) (x y : (u : Fin ℓ) → S u) : Prop :=
-  x i ≠ y i ∧ ∀ j, j ≠ i → x j = y j
+  elaborate unchanged. It is VCVio's `Function.DiffersOnlyAt` at coordinates `Fin ℓ`. -/
+abbrev CoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} (i : Fin ℓ) (x y : (u : Fin ℓ) → S u) : Prop :=
+  Function.DiffersOnlyAt i x y
 
 /-- `≡ᵢ` is decidable over decidable alphabets: finitely many coordinates, each compared by
 `DecidableEq`. This is what lets the star-center search (`CoordinateWise.SingleRound.central` /
 `sib`) run rather than choose classically, hence what keeps tree extractors executable. -/
 instance instDecidableCoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} [∀ u, DecidableEq (S u)] (i : Fin ℓ)
     (x y : (u : Fin ℓ) → S u) : Decidable (CoordEq i x y) := by
-  unfold CoordEq; infer_instance
+  unfold CoordEq Function.DiffersOnlyAt; infer_instance
 
 /-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is coordinate-wise special sound if its
 vectors are pairwise distinct and it has a central index with `k-1` siblings for each coordinate.

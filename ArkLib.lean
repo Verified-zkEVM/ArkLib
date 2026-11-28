@@ -908,6 +908,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Com
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Layout
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutBlockFinder
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutVecTree
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
