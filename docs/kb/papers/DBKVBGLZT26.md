@@ -11,6 +11,7 @@ related_modules:
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Layout.lean
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean
+  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutBlockFinder.lean
   - ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean
   - ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean
 ---
@@ -52,13 +53,21 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
   defines the structure with a layout per round, and maps the homogeneous structure of
   [`FMN24`](FMN24.md) into it with the same tree shape (`CWSSStructure.toBlock_toShape`).
 - [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean)
-  is the only file of the coordinate-wise special-soundness layer that imports the VCVio
-  rewinding finder.
+  reads a tree of a layout as a structured `Rewinding.VecTree`.
+- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutBlockFinder.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutBlockFinder.lean)
+  relates a block to VCVio's block finder: a family of `1 + ∑ u, (k u - 1)` points is a star
+  exactly when its image is a block star (`isBlockSpecialSoundFamily_iff_isBlockSpecialSound`),
+  every block star is the image of a star family, and on a block with nonempty alphabets
+  `Block.error` and `Block.arity` read in `ℝ≥0∞` are the error and the cost of
+  `OracleComp.isFinder_blockFinder` (`Block.coe_error`, `Block.coe_arity`). With
+  `LayoutVecTree.lean` it is one of the two files of the coordinate-wise special-soundness layer
+  that import the VCVio rewinding finder. `CoordEq` is VCVio's `Function.DiffersOnlyAt`.
 - [`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`](../../../ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean)
   and
   [`ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean`](../../../ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean)
   hold the interpolation lemma and its bridge to the finders.
 - Tests: `ArkLibTest/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean`,
+  `ArkLibTest/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutBlockFinder.lean`,
   `ArkLibTest/Data/MvPolynomial/VecTreeInterpolation.lean`.
 
 ## Version Notes
@@ -82,17 +91,17 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
 - A threshold `k u` of `0` or `1` asks for no sibling at that coordinate. The paper requires
   `k ≥ 2`. `Block.Admissible` states `1 ≤ k u ≤ |X u|`, the range in which a star can exist.
 - `Block.error` and `BlockCWSSStructure.knowledgeError` are sums. They are the failure probability
-  of the search for siblings in each coordinate fibre of a uniformly sampled center, not a
-  collision probability of independent samples. They get that meaning from the block finder, which
-  is not in ArkLib yet: VCVio's `OracleComp.blockFinder` (pull request VCVio#1223) draws the
-  siblings of each coordinate without replacement, so no two children collide, and
-  `OracleComp.isFinder_blockFinder` proves its bound `ε ≤ κ + (1 - κ) p` at `κ = Block.error`.
+  of the search for siblings in each coordinate fibre of a uniformly sampled centre, not a
+  collision probability of independent samples. They get that meaning from VCVio's block finder
+  `OracleComp.blockFinder`, which draws the siblings of each coordinate without replacement, so no
+  two children collide; on a block with nonempty alphabets its error is `Block.error` read in
+  `ℝ≥0∞` (`Block.coe_error`).
 
 ## Open Formalization Gaps
 
 - The knowledge error and expected tree size of Corollary 10.11 and Lemma 10.14 (i) as statements
-  about an extractor. This needs the block star step and the multi-round block finder in VCVio, and
-  the legacy rewinding instance of
+  about an extractor. The block star step exists in VCVio (`OracleComp.blockFinder`); this still
+  needs the multi-round block finder in VCVio and the legacy rewinding instance of
   [#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410).
 - The bridge from `Layout.nested` to `Rewinding.VecTree.toNested`: the points of a nested layout
   are `Fin 1 → A b`, so the tree is transported along a round-wise equivalence first.
