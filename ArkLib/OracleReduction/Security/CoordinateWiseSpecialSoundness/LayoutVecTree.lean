@@ -16,8 +16,9 @@ public import VCVio.CryptoFoundations.Rewinding.Finder
   A tree of a layout (`CoordinateWise.Layout.IsTree`) is such a tree over the blocks of the layout,
   read through `Layout.pathEquiv`, whose nodes satisfy the star condition of their block.
 
-  This file is the only place where the layouts meet the rewinding framework. The files that define
-  layouts and structures do not import it, so the protocol layer does not depend on the finder.
+  This file and `LayoutBlockFinder.lean`, which relates a block to VCVio's block finder, are the
+  only places where the layouts meet the rewinding framework. The files that define layouts and
+  structures import neither, so the protocol layer does not depend on the finder.
 
   ## Main results
 

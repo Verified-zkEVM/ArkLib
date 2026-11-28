@@ -13,8 +13,8 @@ public import Mathlib.Data.NNRat.Defs
   # Blocks and layouts of one vector challenge
 
   A vector challenge is extracted in two ways at once. Inside a **block**, the extractor needs a
-  star of siblings: a center and, for every coordinate, `k u - 1` siblings that differ from the
-  center in that coordinate alone. Across the blocks of a **layout**, it branches as a nested tree:
+  star of siblings: a centre and, for every coordinate, `k u - 1` siblings that differ from the
+  centre in that coordinate alone. Across the blocks of a **layout**, it branches as a nested tree:
   below every prefix of choices, the children of block `b` form a star of block `b`.
 
   Flat extraction is one block. Nested interpolation is one coordinate per block, and plain
@@ -78,10 +78,10 @@ instance [∀ u, DecidableEq (B.Alphabet u)] (c : Fin B.arity → B.Point) : Dec
   inferInstanceAs (Decidable (IsBlockSpecialSoundFamily B.threshold c))
 
 /-- The sum `∑ u, (k u - 1) / |X u|` over the coordinates of a block. The block finder gives this
-sum its meaning: it samples a uniform center and draws the siblings of each coordinate `u` without
-replacement from the values of `X u` other than the center's, so no two children collide, and
+sum its meaning: it samples a uniform centre and draws the siblings of each coordinate `u` without
+replacement from the values of `X u` other than the centre's, so no two children collide, and
 `OracleComp.isFinder_blockFinder` (VCVio) proves its bound `ε ≤ κ + (1 - κ) p` at `κ` equal to this
-sum. This file only defines it. -/
+sum (`Block.coe_error` in `LayoutBlockFinder.lean`). This file only defines it. -/
 def error [∀ u, Fintype (B.Alphabet u)] : ℚ≥0 :=
   ∑ u, ((B.threshold u - 1 : ℕ) : ℚ≥0) / Fintype.card (B.Alphabet u)
 

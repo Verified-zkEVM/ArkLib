@@ -96,7 +96,7 @@ theorem toShape_arity_pos : ∀ i, 0 < D.toShape.arity i := D.arity_pos
 def treeSize : ℕ := ∏ i, D.arity i
 
 /-- The sum of the errors of all blocks of all rounds. Each block contributes the failure
-probability of the search for siblings in the coordinate fibres of a uniformly sampled center
+probability of the search for siblings in the coordinate fibres of a uniformly sampled centre
 (`Block.error`), not a collision probability of independent samples. The block finder gives the sum
 its meaning as a bound on a knowledge error; this file only defines it. -/
 def knowledgeError [∀ i b u, Fintype (((D.layout i).block b).Alphabet u)] : ℚ≥0 :=
