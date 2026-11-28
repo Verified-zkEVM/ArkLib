@@ -746,8 +746,9 @@ home_page/            site assets and assembled website root
   `Security/CoordinateWiseSpecialSoundness/Layout.lean` defines the blocks and layouts of one vector
   challenge (a star per block, a nested tree across blocks). `BlockStructure.lean` defines
   `BlockCWSSStructure`, a layout per round, and maps `CWSSStructure` into it with the same tree
-  shape. `LayoutVecTree.lean` is the only file of this folder that imports the VCVio rewinding
-  finder: it reads a tree of a layout as a structured `Rewinding.VecTree`.
+  shape. `BlockComposition.lean` appends such structures (`BlockCWSSStructure.append`).
+  `LayoutVecTree.lean` is the only file of this folder that imports the VCVio rewinding finder: it
+  reads a tree of a layout as a structured `Rewinding.VecTree`.
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).

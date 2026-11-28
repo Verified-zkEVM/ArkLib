@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockComposition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockStructure
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Layout
@@ -40,6 +41,8 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
     layouts.
   * `BlockStructure` — `BlockCWSSStructure`, a layout per round, with its shape, tree size and
     error sum, and the embedding `CWSSStructure.toBlock` of the homogeneous structure (same shape).
+  * `BlockComposition` — `BlockCWSSStructure.append`, the append of structures with layouts along
+    protocol append, whose shape is the append of the shapes (`BlockCWSSStructure.toShape_append`).
   * `LayoutVecTree` — trees of a layout as structured `Rewinding.VecTree`s of the VCVio finders.
   * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
     (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor

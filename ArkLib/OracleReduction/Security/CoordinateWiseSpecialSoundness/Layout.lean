@@ -140,6 +140,14 @@ def IsTree (c : Fin L.arity → L.Point) : Prop :=
   ∀ (p : L.Path) (b : Fin L.depth),
     (L.block b).IsStar (fun j => c (L.pathEquiv (Function.update p b j)) b)
 
+/-- Heterogeneously equal point families over equal layouts are trees of one layout exactly when
+they are trees of the other. -/
+theorem isTree_congr {L L' : Layout} (h : L = L') {c : Fin L.arity → L.Point}
+    {c' : Fin L'.arity → L'.Point} (hc : HEq c c') : L.IsTree c ↔ L'.IsTree c' := by
+  subst h
+  cases hc
+  rfl
+
 /-! ### Special layouts -/
 
 /-- Flat: one block. -/
